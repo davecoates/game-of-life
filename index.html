@@ -1,0 +1,14 @@
+<html>
+    <head>
+        <script type='text/javascript' id='lt_ws' src='http://localhost:49521/socket.io/lighttable/ws.js'></script>
+        <style>
+            canvas { border: 1px solid black;}
+            </style>
+    </head>
+    <body>
+        <script src="out/goog/base.js" type="text/javascript"></script>
+        <script src="game_of_life.js" type="text/javascript"></script>
+        <script type="text/javascript">goog.require("game_of_life.core");</script>
+        <canvas id="game" width="800" height="800"></canvas>
+    </body>
+</html>
