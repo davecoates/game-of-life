@@ -40,7 +40,6 @@
   "Spawn next generation from living cells"
   [neighbours cells]
   (do
-    (println (count cells))
     (set (for [[cell n] (frequencies (mapcat neighbours cells))
                :when (or (= n 3) (and (= n 2) (cells cell)))
                ] cell))))
@@ -62,7 +61,6 @@
     om/IDidMount
     (did-mount [this]
                (let [canvas (om/get-node owner) resolution (om/get-state owner :resolution)]
-                 (println resolution)
                  (canvas/draw-board! canvas resolution (:cells data))))
     om/IDidUpdate
     (did-update [this prev-props prev-state]
@@ -86,22 +84,20 @@
   [keywordstr]
   (keyword (subs keywordstr 1)))
 
-(defn center-pattern
-  "Center a pattern of size w * h within area size-w * size-h"
-  [[size-w size-h] [w h]]
-  (let [x (/ size-w 2)
-        y (/ size-h 2)
-        w2 (/ w 2)
-        h2 (/ h 2)
+(defn center-cell
+  "Center a cell of position x * h within area size-w * size-h"
+  [[w h] [x y]]
+  (let [w2 (window/Math.ceil (/ w 2))
+        h2 (window/Math.ceil (/ h 2))
+        x2 (window/Math.floor (/ x 2))
+        y2 (window/Math.floor (/ y 2))
         ]
-    (.log window/console x y w2 h2)
-    [(- x w2) (- y h2)]))
-
+    [(- w2 x2) (- h2 y2)]))
 
 (defn set-pattern!
   "Set current pattern. Requires resolution in order to center pattern."
   [resolution pattern]
-  (swap! app-state assoc :cells (set (map #(into [] (map + (center-pattern resolution (pattern :size)) %)) (pattern :cells)))))
+  (swap! app-state assoc :cells (set (map #(into [] (map + (center-cell resolution (pattern :size)) %)) (pattern :cells)))))
 
 
 (defn main-view [data owner]
@@ -135,7 +131,6 @@
      (render-state [this {:keys [events running? width height resolution selected-pattern]}]
              (dom/div nil
                       (apply dom/select #js {
-                                             :value selected-pattern
                                              :onChange (fn [e] (let [label (keywordstr->keyword (.. e -target -value))
                                                                      pattern (available-patterns label)]
                                                                  (set-pattern! resolution pattern)))
