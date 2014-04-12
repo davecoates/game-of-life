@@ -68,7 +68,7 @@
                  (canvas/draw-board! canvas resolution (:cells data))))
     om/IRenderState
     (render-state [this {:keys [width height]}]
-            (dom/canvas #js {:width width :height height}))))
+            (dom/canvas #js {:width 1000 :height height}))))
 
 (defn calc-resolution
   "Calculate vertical and horizontal number of cells based on total number of
@@ -97,7 +97,9 @@
 (defn set-pattern!
   "Set current pattern. Requires resolution in order to center pattern."
   [resolution pattern]
-  (swap! app-state assoc :cells (set (map #(into [] (map + (center-cell resolution (pattern :size)) %)) (pattern :cells)))))
+  (swap! app-state assoc
+         :pattern pattern
+         :cells (set (map #(into [] (map + (center-cell resolution (pattern :size)) %)) (pattern :cells)))))
 
 
 (defn main-view [data owner]
@@ -130,16 +132,30 @@
     om/IRenderState
      (render-state [this {:keys [events running? width height resolution selected-pattern]}]
              (dom/div nil
-                      (apply dom/select #js {
-                                             :onChange (fn [e] (let [label (keywordstr->keyword (.. e -target -value))
-                                                                     pattern (available-patterns label)]
-                                                                 (set-pattern! resolution pattern)))
-                                             }
-                                  (map #(dom/option #js {:value (first %)} ((second %) :title)) available-patterns))
-                      (dom/button #js {:onClick (fn [e] (put! events
-                                                              (if running? :stop :start)))
-                                       } (if running? "Stop" "Start"))
-                      (om/build canvas data {:state {:width width :height height :resolution resolution}})))))
+                      (dom/div #js {:className "pattern-select row collapse"}
+                               (dom/div #js {:className "small-10 large-6 columns"}
+                                        (apply dom/select #js {
+                                                               :onChange (fn [e] (let [label (keywordstr->keyword (.. e -target -value))
+                                                                                       pattern (available-patterns label)]
+                                                                                   (set-pattern! resolution pattern)))
+                                                               }
+                                               (map #(dom/option #js {:value (first %)} ((second %) :title)) available-patterns)))
+                               (dom/div #js {:className "small-2 large-1 columns"}
+                                        (dom/button #js {:className "button postfix"
+                                                         :onClick (fn [e] (put! events
+                                                                                (if running? :stop :start)))
+                                                         } (if running? "Stop" "Start"))))
+                      (dom/div #js {:className "row"}
+                        (dom/div #js {:className "columns pattern-source"}
+                                          "* Patterns from http://www.conwaylife.com/wiki/")
+                        (dom/div #js {:className "columns pattern-details"}
+                                 (dom/h4 nil (-> @app-state :pattern :title)
+                                         (when-let [author (-> @app-state :pattern :author)]
+                                           (dom/span #js {:className "author"} (str " by " author)))))
+                        (apply dom/div #js {:className "columns comments"}
+                               (map #(dom/span nil %) (-> @app-state :pattern :comments))))
+                      (dom/div nil
+                        (om/build canvas data {:state {:width width :height height :resolution resolution}}))))))
 
 (om/root main-view app-state
   {:target (. js/document (getElementById "app"))})

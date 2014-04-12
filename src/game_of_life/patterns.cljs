@@ -40,11 +40,13 @@
     (condp = c
       "C" {:type "comment" :val value}
       "N" {:type "name" :val value}
+      "O" {:type "author" :val value}
       {:type "?" :val value}
       )
   ))
 
 (defn parse-rle
+  "Parse Run Length Encoded file. See http://www.conwaylife.com/wiki/RLE"
   [rle]
   (let [lines (string/split-lines rle)
         comments (filter #(= "#" (first %)) lines)
@@ -54,6 +56,8 @@
         pattern (last matches)
         ]
     {:title (-> (filter #(= "name" (:type %)) meta-data) first :val)
+     :author (-> (filter #(= "author" (:type %)) meta-data) first :val)
+     :comments (map :val (filter #(= "comment" (:type %)) meta-data))
      :size [(window/parseInt x) (window/parseInt y)]
      :rule rule
      :meta meta-data
@@ -101,6 +105,7 @@ x = 50, y = 15, rule = b3/s23
 11bo38b$10b2o38b$9b2o39b$10b2o2b2o34b$38bo11b$38b2o8b2o$39b2o7b2o$10b
 2o2b2o18b2o2b2o10b$2o7b2o39b$2o8b2o38b$11bo38b$34b2o2b2o10b$39b2o9b$
 38b2o10b$38bo!")
+
 
 (def patterns [gosper-glider-gun, bi-gun, acorn, five-engine-cordership])
 

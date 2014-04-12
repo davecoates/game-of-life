@@ -1,15 +1,35 @@
-<html>
+<!doctype html>
+<html lang="en">
     <head>
-        <script type='text/javascript' id='lt_ws' src='http://localhost:50209/socket.io/lighttable/ws.js'></script>
-        <style>
-            canvas { border: 1px solid black;}
-            </style>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Game of Life</title>
+
+      <script type='text/javascript' id='lt_ws' src='http://localhost:50209/socket.io/lighttable/ws.js'></script>
+      <link rel="stylesheet" href="stylesheets/app.css" />
+      <script src="bower_components/modernizr/modernizr.js"></script>
+
     </head>
     <body>
-        <div id="app"></div>
-        <script src="http://fb.me/react-0.9.0.js"></script>
-        <script src="out/goog/base.js" type="text/javascript"></script>
-        <script src="game_of_life.js" type="text/javascript"></script>
-        <script type="text/javascript">goog.require("game_of_life.core");</script>
+        <div class="columns">
+            <div class="row">
+                <h1>Game of Life</h1>
+                <p><a href="http://en.wikipedia.org/wiki/Conway's_Game_of_Life">Conway's Game of Life</a> implemented in ClojureScript.</p>
+                <p>At each generation the following transitions take place:</p>
+                <ul>
+                    <li>Any live cell with fewer than two live neighbours dies, as if caused by under-population.</li>
+                    <li>Any live cell with two or three live neighbours lives on to the next generation.</li>
+                    <li>Any live cell with more than three live neighbours dies, as if by overcrowding.</li>
+                    <li>Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.</li>
+                </ul>
+            </div>
+
+            <div class="row" id="app"></div>
+        </div>
+
+      <script src="http://fb.me/react-0.9.0.js"></script>
+      <script src="out/goog/base.js" type="text/javascript"></script>
+      <script src="game_of_life.js" type="text/javascript"></script>
+      <script type="text/javascript">goog.require("game_of_life.core");</script>
     </body>
-</html>
+  </html>
