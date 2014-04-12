@@ -20,33 +20,6 @@
            (for [[index line] (map vector (iterate inc 1) lines)]
              (map #(vector % index) (decode-line line)))))))
 
-(def glider #{[1 0][ 2 1] [0 2] [1 2] [2 2]})
-
-
-;; From http://www.conwaylife.com/wiki/RLE
-(def glider-gun (decode-RLE-str "24bo11b$22bobo11b$12b2o6b2o12b2o$11bo3bo4b2o12b2o$2o8bo5bo3b2o14b$2o8bo3bob2o4bobo11b$10bo5bo7bo11b$11bo3bo20b$12b2o"))
-(def bi-gun (decode-RLE-str "11bo38b$10b2o38b$9b2o39b$10b2o2b2o34b$38bo11b$38b2o8b2o$39b2o7b2o$10b2o2b2o18b2o2b2o10b$2o7b2o39b$2o8b2o38b$11bo38b$34b2o2b2o10b$39b2o9b$38b2o10b$38bo!"))
-(def big-gun (decode-RLE-str "11bo38b$10b2o38b$9b2o39b$10b2o2b2o34b$38bo11b$38b2o8b2o$39b2o7b2o$10b2o2b2o18b2o2b2o10b$2o7b2o39b$2o8b2o38b$11bo38b$34b2o2b2o10b$39b2o9b$38b2o10b$38bo"))
-
-(def acorn (decode-RLE-str "bo5b$3bo3b$2o2b3o"))
-
-(def ten-engine-cordership (decode-RLE-str "42bo45b$42bo45b$44bo5bo37b$43bo6bobo35b$42bo3bo2bo38b$43bo2bobob2o36b$48bob2o36b$62b2o24b$62b2o24b7$70b2o16b$26b2o2bo39b2o16b$29bobo56b$28bo59b2$30b2o56b2$31b2o55b$30bo47b2o8b$28b2ob2o45b2o8b$31b2o55b$16bo12bo58b$16bo22b3o46b$18bo5bo13bo49b$17bo6bobo10bo4b2o44b$16bo3bo2bo12bo3bo47b$17bo2bobob2o10bo2bo4bo41b2o$22bob2o10bo3bo3bo32bo8b2o$37b2obob3o31bobo9b$40bo47b$41b4o31bo2bo8b$30b3o10b2o33b2o8b$29bo3bo45bo8b$28bo4bo54b$27bo3bo56b$27bo2bob3o53b$27bo7bo52b$2o2bo24bo3bobo40b2o10b$3bobo23bo3bob2o41bo9b$2bo28b3ob2o39b2o10b2$4b2o82b2$5b2o81b$4bo83b$2b2ob2o52bobo6bobo17b$5b2o51bo9bobo17b$3bo55bo2bo6bo18b$61b3o24b5$51bo36b$50bobo35b2$50bo2bo34b$7b2o43b2o34b$7b2o44bo34b5$50b2o36b$52bo35b$15b2o33b2o36b$15b2o71b5$33bobo6bobo43b$32bo9bobo43b$23b2o8bo2bo6bo44b$23b2o10b3o50b7$31b2o55b$31b2o"))
-
-(def metacatacryst (decode-RLE-str "15366bo$15366bo$15364b2o$15363bo$15363bo$15363bo$15363bo6$15393bo$15392b2o$15390bo2bo2$15390bobo$15391bo133$15568b2o$15569b2o$15569bo29$15554bo$15553bobo$15555bo$15556bo507$59722b2o$59721b2o$59722bo29$59737bo$59736bobo$59736bo$59735bo13907$bo3bo$2bobo$o2bo$o$o21$33bo$32bo$31bo$32bo$33bo$29b3o!"))
-
-(def gosper-glider-gun "#N Gosper glider gun
-#C This was the first gun discovered.
-#C As its name suggests, it was discovered by Bill Gosper.
-x = 36, y = 9, rule = B3/S23
-24bo$22bobo$12b2o6b2o12b2o$11bo3bo4b2o12b2o$2o8bo5bo3b2o$2o8bo3bob2o4b
-obo$10bo5bo7bo$11bo3bo$12b2o!")
-
-(def acorn "#N Acorn
-#O Charles Corderman
-#C A methuselah with lifespan 5206.
-#C www.conwaylife.com/wiki/index.php?title=Acorn
-x = 7, y = 3, rule = B3/S23
-bo5b$3bo3b$2o2b3o!")
 
 (defn parse-rule
   "Parse rule string of form x = 36, y = 9, rule = B3/S23"
@@ -86,12 +59,58 @@ bo5b$3bo3b$2o2b3o!")
      :meta meta-data
      :cells (decode-RLE-str pattern)}))
 
-(parse-rle gosper-glider-gun)
 
+;; From http://www.conwaylife.com/wiki/RLE
+(def gosper-glider-gun "#N Gosper glider gun
+#C This was the first gun discovered.
+#C As its name suggests, it was discovered by Bill Gosper.
+x = 36, y = 9, rule = B3/S23
+24bo$22bobo$12b2o6b2o12b2o$11bo3bo4b2o12b2o$2o8bo5bo3b2o$2o8bo3bob2o4b
+obo$10bo5bo7bo$11bo3bo$12b2o!")
 
+(def acorn "#N Acorn
+#O Charles Corderman
+#C A methuselah with lifespan 5206.
+#C www.conwaylife.com/wiki/index.php?title=Acorn
+x = 7, y = 3, rule = B3/S23
+bo5b$3bo3b$2o2b3o!")
+
+(def five-engine-cordership "#N 5-engine Cordership
+#O David Bell
+#C A diagonal c/12 period 96 Cordership found on June 5, 2005.
+#C www.conwaylife.com/wiki/index.php?title=5-engine_Cordership
+x = 104, y = 75, rule = b3/s23
+67b2o35b$68bo2bo4bo27b$65bo2b3obo2bobo26b$65bo2bo4b4o27b$65bo2bo35b$
+68bo6bo28b$67b2obo33b$75bo11b2o15b$73b2o12b2o15b3$71bo32b$70bobo31b$
+70bobo31b$71bo32b$95b2o7b$95b2o7b2$58bo45b$57b3o19bo24b$56b2ob2o17bobo
+23b$57b3o18bobo23b$58bo20bo24b$58bobo43b$58b4o42b$61bo41bo2$57b2ob2o
+42b$40b5o7bo3bo5bo41b$38b2o5b2o4bobo3bo3bo42b$38bo7bo4bo6bo45b$38b2o7b
+o3bo2bo49b$25bo14b2o6bo3b3o49b$24b3o16bo60b$43bo4bo55b$24b3o17b2obo56b
+$25b2ob2o74b$27bo76b3$b3o100b$2bo67b2o32b$2bo2bo63bobo32b$2bo2bo65bo
+32b$3bobo98b$18b2o18b2o64b$18b2o18b2o64b$24bo79b$23b3o78b$2bo19b2ob2o
+77b$bobo18bobo79b$2bo19bo81b2$46b2o56b$4o42b2o56b$2o3bo13bo84b$bo4bo
+11bobo83b$3bob2o11bo85b$4bo15b2o82b$21bo82b$18b3o83b$19b2o83b$16bo87b$
+16b2o86b$16b2o86b$6b2o6b2o88b$6b2o4b2o90b$12b2obo88b$14b2o88b5$14b2o
+88b$14b2o!")
+
+(def bi-gun "#N Bi-gun
+#O Bill Gosper
+#C A true period 46 double-barreled glider gun.
+#C www.conwaylife.com/wiki/index.php?title=Bi-gun
+x = 50, y = 15, rule = b3/s23
+11bo38b$10b2o38b$9b2o39b$10b2o2b2o34b$38bo11b$38b2o8b2o$39b2o7b2o$10b
+2o2b2o18b2o2b2o10b$2o7b2o39b$2o8b2o38b$11bo38b$34b2o2b2o10b$39b2o9b$
+38b2o10b$38bo!")
+
+(def patterns [gosper-glider-gun, bi-gun, acorn, five-engine-cordership])
+
+(defn title->keyword
+  [title]
+  (-> title string/lower-case (string/replace " " "-") keyword))
+
+;; Create map of patterns using title as keyword
 (def available-patterns
-  {
-   :glider-gun (parse-rle gosper-glider-gun)
-   :acorn (parse-rle acorn)
-   }
-)
+  (reduce (fn [m a]
+            (assoc m (title->keyword (:title a)) a))
+          {}
+          (map parse-rle patterns)))
