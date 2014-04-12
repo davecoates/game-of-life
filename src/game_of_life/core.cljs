@@ -1,50 +1,22 @@
 (ns game-of-life.core
-  (:require [clojure.string :as string]
-            [game-of-life.patterns]))
+  (:require-macros [cljs.core.async.macros :refer [go]])
+  (:require [om.core :as om :include-macros true]
+            [om.dom :as dom :include-macros true]
+            [cljs.core.async :refer [put! chan <!]]
+            [clojure.string :as string]
+            [game-of-life.patterns :refer [available-patterns]]
+            [game-of-life.canvas :as canvas]
+            [cljs.reader :as reader]
+            [goog.events :as events]
+            [goog.dom :as gdom])
+  (:import [goog.net XhrIo]
+           goog.net.EventType
+           [goog.events EventType]))
 
 (enable-console-print!)
 
-(defn clear [canvas]
-  (let [ctx (.getContext canvas "2d")]
-    (.save ctx)
-    (.setTransform ctx 1 0 0 1 0 0)
-    (.clearRect ctx 0 0 (.-width canvas) (.-height canvas))
-    (.restore ctx)))
 
-(defn rgb-str [r g b]
-  (clojure.string/join ["rgb(", (clojure.string/join ", " [r g b]), ")"]))
-
-(defn draw-cell [ctx size [x y]]
-    (.fillRect ctx (* x size) (* y size) size size))
-
-(defn draw-line [ctx [ax ay] [bx by]]
-  (do
-    (.beginPath ctx)
-    (.moveTo ctx ax ay)
-    (.lineTo ctx bx by)
-    (.stroke ctx)
-  ))
-
-; DAVE - wrap-loc in effect means what you see isn't really what's happening. Do behave like a torus it needs to be a part of
-; the torus function. This is just display everything off screen on screen but the coords are still off screen...
-
-(defn draw-board!
-  [canvas size live-cells]
-  (let [ctx (.getContext canvas "2d")
-        wrap-at (- size 1)
-        w (.-width canvas)
-        h (.-height canvas)
-        cell-w (/ w size)]
-    (clear canvas)
-    (set! (.-fillStyle ctx) (rgb-str 200 0 0))
-    (doseq [cell live-cells] (draw-cell ctx cell-w (wrap-loc wrap-at wrap-at cell)))
-    (set! (.-lineWidth ctx) 0.1)
-    (doseq [x (range 1 size)]
-      (draw-line ctx [(* x cell-w) 0] [(* x cell-w) h])
-      (draw-line ctx [0 (* x cell-w)] [w (* x cell-w)]))
-    ))
-
-(defn wrap-loc
+(defn torus
   "Wrap x,y if out of bounds defined by w(idth), h(eight)"
   [w h [x y]]
   (let [translate-coord (fn [x s]
@@ -54,31 +26,128 @@
   [(translate-coord x w)
    (translate-coord y h)]))
 
+(defn in-range?
+  [[max-x max-y ][x y]]
+    (and (<= 0 x max-x) (<= 0 y max-y)))
 
 (defn neighbours
   "Generate coords of neighbours for cell at x,y"
   [[x y]]
-  (for [dx [-1 0 1] dy [-1 0 1] :when (not= 0 dx dy)]
+  (for [dx [-1 0 1] dy [-1 0 1] :when (and (not= 0 dx dy))]
     [(+ x dx) (+ y dy)]))
-
 
 (defn tick
   "Spawn next generation from living cells"
-  [cells]
-  (set (for [[cell n] (frequencies (mapcat neighbours cells))
-        :when (or (= n 3) (and (= n 2) (cells cell)))
-        ] cell)))
+  [neighbours cells]
+  (do
+    (println (count cells))
+    (set (for [[cell n] (frequencies (mapcat neighbours cells))
+               :when (or (= n 3) (and (= n 2) (cells cell)))
+               ] cell))))
 
-(def GRID_STATE (set (map #(into [] (map + [40 40] %)) game-of-life.patterns/metacatacryst)))
+(defn tick! [neighbours] (swap! app-state assoc :cells (tick neighbours (@app-state :cells))))
+
+(defn start [neighbours]
+    (js/setInterval #(tick! neighbours) 200))
+
+(def app-state (atom {:cells #{}
+                      :width 800
+                      :height 400
+                      :total-cells 10000
+                      }))
 
 
-(defn tick! [] (set! GRID_STATE (tick GRID_STATE)))
+(defn canvas [data owner]
+  (reify
+    om/IDidMount
+    (did-mount [this]
+               (let [canvas (om/get-node owner) resolution (om/get-state owner :resolution)]
+                 (println resolution)
+                 (canvas/draw-board! canvas resolution (:cells data))))
+    om/IDidUpdate
+    (did-update [this prev-props prev-state]
+               (let [canvas (om/get-node owner) resolution (om/get-state owner :resolution)]
+                 (canvas/draw-board! canvas resolution (:cells data))))
+    om/IRenderState
+    (render-state [this {:keys [width height]}]
+            (dom/canvas #js {:width width :height height}))))
 
-(defn start []
-  (let [canvas (js/document.getElementById "game")]
-    (js/setInterval #(draw-board! canvas 100 (tick!)) 100)))
+(defn calc-resolution
+  "Calculate vertical and horizontal number of cells based on total number of
+  cells and width / height of render area"
+  [total-cells w h]
+  (let[w-ratio (/ w h)
+       h-ratio (/ h w)
+       sqrt (.sqrt js/Math (* w-ratio total-cells))]
+    [sqrt (* h-ratio sqrt)]))
 
-(set! (.-onload js/window) start)
+(defn keywordstr->keyword
+  "Take a keyword string (eg. :keyword) and conver it to a keyword"
+  [keywordstr]
+  (keyword (subs keywordstr 1)))
+
+(defn center-pattern
+  "Center a pattern of size w * h within area size-w * size-h"
+  [[size-w size-h] [w h]]
+  (let [x (/ size-w 2)
+        y (/ size-h 2)
+        w2 (/ w 2)
+        h2 (/ h 2)
+        ]
+    (.log window/console x y w2 h2)
+    [(- x w2) (- y h2)]))
+
+
+(defn set-pattern!
+  "Set current pattern. Requires resolution in order to center pattern."
+  [resolution pattern]
+  (swap! app-state assoc :cells (set (map #(into [] (map + (center-pattern resolution (pattern :size)) %)) (pattern :cells)))))
+
+
+(defn main-view [data owner]
+  (reify
+    om/IInitState
+    (init-state [_]
+                (let [{:keys [width height total-cells]} data
+                      resolution (calc-resolution total-cells width height)
+                      [pattern-key pattern] (first available-patterns)
+                      ]
+                  (set-pattern! resolution pattern)
+                  {:events (chan)
+                   :running? false
+                   :interval nil
+                   :width width
+                   :height height
+                   :resolution resolution
+                   :selected-pattern pattern-key
+       }))
+    om/IWillMount
+    (will-mount [_]
+      (let [events (om/get-state owner :events) res (om/get-state owner :resolution)]
+        (go (loop []
+              (let [v (<! events)]
+                (om/set-state! owner :running? (= v :start))
+                (cond
+                 (= v :start) (om/set-state! owner :interval (start (fn [cell] (filter #(in-range? res %) (neighbours cell)))))
+                 (= v :stop) (js/clearInterval (om/get-state owner :interval)))
+              (recur))))))
+    om/IRenderState
+     (render-state [this {:keys [events running? width height resolution selected-pattern]}]
+             (dom/div nil
+                      (apply dom/select #js {
+                                             :value selected-pattern
+                                             :onChange (fn [e] (let [label (keywordstr->keyword (.. e -target -value))
+                                                                     pattern (available-patterns label)]
+                                                                 (set-pattern! resolution pattern)))
+                                             }
+                                  (map #(dom/option #js {:value (first %)} ((second %) :title)) available-patterns))
+                      (dom/button #js {:onClick (fn [e] (put! events
+                                                              (if running? :stop :start)))
+                                       } (if running? "Stop" "Start"))
+                      (om/build canvas data {:state {:width width :height height :resolution resolution}})))))
+
+(om/root main-view app-state
+  {:target (. js/document (getElementById "app"))})
 
 ;(def canvas (js/document.getElementById "game"))
 
