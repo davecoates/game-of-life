@@ -1,0 +1,11 @@
+@import "settings";
+@import "foundation";
+
+canvas { width: 100%; margin-top: 40px;}
+.pattern-select {}
+.comments span {
+  padding-right: 5px;
+  color: #aaa;
+}
+.author { font-size: 0.8em; color: #666;}
+.pattern-source { font-size: 0.8em;}

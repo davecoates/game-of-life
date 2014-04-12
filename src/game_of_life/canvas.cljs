@@ -32,9 +32,9 @@
     (clear canvas)
     (set! (.-fillStyle ctx) (rgb-str 200 0 0))
     (doseq [cell live-cells] (draw-cell ctx cell-w cell-h cell))
-    (set! (.-lineWidth ctx) 0.1)
-    (doseq [x (range 1 size-x)]
-      (draw-line ctx [(* x cell-w) 0] [(* x cell-w) h]))
-    (doseq [x (range 1 size-y)]
-      (draw-line ctx [0 (* x cell-h)] [w (* x cell-h)]))
+    ;(set! (.-lineWidth ctx) 0.1)
+    ;(doseq [x (range 1 size-x)]
+    ;  (draw-line ctx [(* x cell-w) 0] [(* x cell-w) h]))
+    ;(doseq [x (range 1 size-y)]
+    ;  (draw-line ctx [0 (* x cell-h)] [w (* x cell-h)]))
     ))
