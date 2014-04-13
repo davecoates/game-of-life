@@ -58,6 +58,12 @@
           ;; New state - currently just true or nil but could be other things
           true))))
 
+(def app-state (atom {:cells #{}
+                      :generation 0
+                      :width 800
+                      :height 400
+                      :total-cells 10000
+                      }))
 
 (defn tick! [neighbours transition-state] (swap! app-state assoc
                                 :generation (-> @app-state :generation inc)
@@ -65,13 +71,6 @@
 
 (defn start [neighbours transition-state]
     (js/setInterval #(tick! neighbours transition-state) 200))
-
-(def app-state (atom {:cells #{}
-                      :generation 0
-                      :width 800
-                      :height 400
-                      :total-cells 10000
-                      }))
 
 
 (defn canvas [data owner]
@@ -105,10 +104,10 @@
 (defn center-cell
   "Center a cell of position x * h within area size-w * size-h"
   [[w h] [x y]]
-  (let [w2 (window/Math.ceil (/ w 2))
-        h2 (window/Math.ceil (/ h 2))
-        x2 (window/Math.floor (/ x 2))
-        y2 (window/Math.floor (/ y 2))
+  (let [w2 (js/Math.ceil (/ w 2))
+        h2 (js/Math.ceil (/ h 2))
+        x2 (js/Math.floor (/ x 2))
+        y2 (js/Math.floor (/ y 2))
         ]
     [(- w2 x2) (- h2 y2)]))
 

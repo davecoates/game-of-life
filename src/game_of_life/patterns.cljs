@@ -59,7 +59,7 @@
 (defn str->int
   [s]
   (let [s (if (empty? s) 0 s)]
-    (.parseInt js/window s)))
+    (js/parseInt s)))
 
 (defn parse-rule
   "Split a rule string into two vectors. The first is the number of ON cells
@@ -101,7 +101,7 @@
     {:title (-> (filter #(= "name" (:type %)) meta-data) first :val)
      :author (-> (filter #(= "author" (:type %)) meta-data) first :val)
      :comments (map :val (filter #(= "comment" (:type %)) meta-data))
-     :size [(window/parseInt x) (window/parseInt y)]
+     :size [(js/parseInt x) (js/parseInt y)]
      :rule rule
      :rule-title (rule-names rule)
      :meta meta-data
