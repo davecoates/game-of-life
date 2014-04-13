@@ -7813,3 +7813,12 @@ canvas {
 .pattern-source {
   font-size: 0.8em;
 }
+
+/* line 12, ../scss/app.scss */
+.stats {
+  margin: 20px 0;
+}
+/* line 14, ../scss/app.scss */
+.stats span {
+  margin-right: 20px;
+}

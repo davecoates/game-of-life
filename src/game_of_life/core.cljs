@@ -38,18 +38,36 @@
 
 (defn tick
   "Spawn next generation from living cells"
-  [neighbours cells]
+  [neighbours cells transition-state]
   (do
     (set (for [[cell n] (frequencies (mapcat neighbours cells))
-               :when (or (= n 3) (and (= n 2) (cells cell)))
+               ;; TODO: Currently just passing cell or nill as state
+               :let [new-state (transition-state n (cells cell))]
+               :when new-state
                ] cell))))
 
-(defn tick! [neighbours] (swap! app-state assoc :cells (tick neighbours (@app-state :cells))))
+(defn rule->fn
+  "Create a function that applies a particular rule to a cell.
+  A rule dictates state transition for a cell (eg. live => dead)"
+  [rule]
+    (fn [live-neighbours state]
+      ;; Currently assume state is either live (truthy) or dead (falsy)
+      (let [[s b] rule ; s = survival, b = birth
+            counts (if state s b)]
+        (when (not-empty (filter #(= live-neighbours %) counts))
+          ;; New state - currently just true or nil but could be other things
+          true))))
 
-(defn start [neighbours]
-    (js/setInterval #(tick! neighbours) 200))
+
+(defn tick! [neighbours transition-state] (swap! app-state assoc
+                                :generation (-> @app-state :generation inc)
+                                :cells (tick neighbours (@app-state :cells) transition-state)))
+
+(defn start [neighbours transition-state]
+    (js/setInterval #(tick! neighbours transition-state) 200))
 
 (def app-state (atom {:cells #{}
+                      :generation 0
                       :width 800
                       :height 400
                       :total-cells 10000
@@ -98,10 +116,12 @@
   "Set current pattern. Requires resolution in order to center pattern."
   [resolution pattern]
   (swap! app-state assoc
+         :generation 0
          :pattern pattern
          :cells (set (map #(into [] (map + (center-cell resolution (pattern :size)) %)) (pattern :cells)))))
 
 
+;; TODO: Rethink and cleanup. Hacked together trying to learn about Om/React on the fly.
 (defn main-view [data owner]
   (reify
     om/IInitState
@@ -117,30 +137,46 @@
                    :width width
                    :height height
                    :resolution resolution
-                   :selected-pattern pattern-key
-       }))
+                   }))
+
     om/IWillMount
     (will-mount [_]
-      (let [events (om/get-state owner :events) res (om/get-state owner :resolution)]
+      (let [events (om/get-state owner :events)
+            res (om/get-state owner :resolution)
+            ]
         (go (loop []
-              (let [v (<! events)]
-                (om/set-state! owner :running? (= v :start))
+              (let [v (<! events)
+                    rule (-> @app-state :pattern :rule)
+                    ;; Create our state transition function
+                    transition-state (rule->fn rule)
+                    ;; This fn calculates what neighbours our cell has. Could plug in
+                    ;; other functions here for different topologies
+                    neighbours-fn (fn [cell] (filter #(in-range? res %) (neighbours cell)))]
+                (om/set-state! owner :running? (not= v :stop))
                 (cond
-                 (= v :start) (om/set-state! owner :interval (start (fn [cell] (filter #(in-range? res %) (neighbours cell)))))
-                 (= v :stop) (js/clearInterval (om/get-state owner :interval)))
+                 (= v :start) (om/set-state! owner
+                                             :interval (js/setInterval #(put! events :tick) 200))
+                 (= v :stop) (js/clearInterval (om/get-state owner :interval))
+                 (= v :tick) (tick! neighbours-fn transition-state))
               (recur))))))
+
     om/IRenderState
-     (render-state [this {:keys [events running? width height resolution selected-pattern]}]
+     (render-state [this {:keys [events running? width height resolution]}]
              (dom/div nil
                       (dom/div #js {:className "pattern-select row collapse"}
-                               (dom/div #js {:className "small-10 large-6 columns"}
+                               (dom/div #js {:className "small-10 large-6 medium-8 columns"}
                                         (apply dom/select #js {
                                                                :onChange (fn [e] (let [label (keywordstr->keyword (.. e -target -value))
                                                                                        pattern (available-patterns label)]
                                                                                    (set-pattern! resolution pattern)))
                                                                }
-                                               (map #(dom/option #js {:value (first %)} ((second %) :title)) available-patterns)))
-                               (dom/div #js {:className "small-2 large-1 columns"}
+                                               (map #(dom/option
+                                                      #js {:value (first %)}
+                                                      (let [p (second %)]
+                                                        (str (p :title)
+                                                             " (" (p :rule-title) " )")))
+                                                    available-patterns)))
+                               (dom/div #js {:className "small-2 medium-1 columns end"}
                                         (dom/button #js {:className "button postfix"
                                                          :onClick (fn [e] (put! events
                                                                                 (if running? :stop :start)))
@@ -151,11 +187,19 @@
                         (dom/div #js {:className "columns pattern-details"}
                                  (dom/h4 nil (-> @app-state :pattern :title)
                                          (when-let [author (-> @app-state :pattern :author)]
-                                           (dom/span #js {:className "author"} (str " by " author)))))
+                                           (dom/span #js {:className "author"}
+                                                     (str " by " author)))))
                         (apply dom/div #js {:className "columns comments"}
                                (map #(dom/span nil %) (-> @app-state :pattern :comments))))
+                      (dom/div #js {:className "stats"}
+                               (dom/span {:className "generation"}
+                                         (str "Generation: " (-> @app-state :generation)))
+                               (dom/span {:className "live-cells"}
+                                         (str "Live cells: " (-> @app-state :cells count))))
                       (dom/div nil
-                        (om/build canvas data {:state {:width width :height height :resolution resolution}}))))))
+                        (om/build canvas data {:state {:width width
+                                                       :height height
+                                                       :resolution resolution}}))))))
 
 (om/root main-view app-state
   {:target (. js/document (getElementById "app"))})
