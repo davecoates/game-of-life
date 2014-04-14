@@ -4,7 +4,7 @@
             [om.dom :as dom :include-macros true]
             [cljs.core.async :refer [put! chan <!]]
             [clojure.string :as string]
-            [game-of-life.patterns :refer [available-patterns]]
+            [game-of-life.rle :refer [available-patterns]]
             [game-of-life.canvas :as canvas]
             [cljs.reader :as reader]
             [goog.events :as events]
