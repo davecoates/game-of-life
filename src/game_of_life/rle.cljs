@@ -21,18 +21,21 @@
   [line]
   (let [seqs (re-seq #"(([0-9]*)([a-z]))" line)
         runs (for [[_ _ n s] seqs] [(parse-count n) s])]
-    (loop [[n s] (first runs) tail (rest runs) i 0 result []]
+    (loop [[n s] (first runs)
+           tail (rest runs)
+           i 0
+           result []]
       (cond
        (nil? n) result
        (= s \b) (recur (first tail) (rest tail) (+ i n) result)
-       (= s \o) (recur (first tail) (rest tail) (+ i n) (into [] (concat result (range i (+ i n)))))))))
+       (= s \o) (recur (first tail) (rest tail) (+ i n)
+                       (into [] (concat result (range i (+ i n)))))))))
 
 (defn decode-RLE-str [c]
   (let [lines (clojure.string/split c "$")]
     (set (apply concat
-           (for [[index line] (map vector (iterate inc 1) lines)]
+           (for [[index line] (map vector (iterate inc 0) lines)]
              (map #(vector % index) (decode-line line)))))))
-
 
 (defn parse-rule-header
   "Parse rule string of form x = 36, y = 9, rule = B3/S23"
